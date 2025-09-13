@@ -4,14 +4,14 @@ on:
     # Exécution 2 fois par jour (heures UTC)
     - cron: '0 5 * * *'   # 7h00 heure française (UTC+2)
     - cron: '0 17 * * *'  # 19h00 heure française (UTC+2)
-  
+
   # Permet le lancement manuel depuis GitHub
   workflow_dispatch:
     inputs:
       force_run:
-        description: 'Forcer l\'exécution du crawler'
+        description: "Forcer l'exécution du crawler"
         required: false
-        default: 'true'
+        default: "true"
 
 jobs:
   run-crawler:
