@@ -1,0 +1,75 @@
+name: 🤖 Crawler Automatique Immobilier
+on:
+  schedule:
+    # Exécution 2 fois par jour (heures UTC)
+    - cron: '0 5 * * *'   # 7h00 heure française (UTC+2)
+    - cron: '0 17 * * *'  # 19h00 heure française (UTC+2)
+  
+  # Permet le lancement manuel depuis GitHub
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: 'Forcer l\'exécution du crawler'
+        required: false
+        default: 'true'
+
+jobs:
+  run-crawler:
+    runs-on: ubuntu-latest
+    name: 🏠 Lancer le Crawler SeLoger
+    
+    steps:
+      - name: 📋 Informations d'exécution
+        run: |
+          echo "🕐 Heure d'exécution: $(date)"
+          echo "🌍 Fuseau horaire: $(timedatectl show --property=Timezone --value)"
+          echo "🎯 Déclenchement du crawler immobilier..."
+
+      - name: 🚀 Déclencher le crawler Supabase
+        run: |
+          # Générer un UUID pour le job
+          JOB_ID=$(uuidgen)
+          echo "📝 Job ID: $JOB_ID"
+          
+          # Appeler la fonction Edge Supabase
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"job_id\": \"$JOB_ID\"}" \
+            https://veoynqppumqslocvtzvk.supabase.co/functions/v1/crawler-annonces)
+          
+          # Extraire le code de statut HTTP
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          
+          echo "📡 Code de réponse: $HTTP_CODE"
+          echo "📊 Réponse: $BODY"
+          
+          # Vérifier le succès
+          if [ "$HTTP_CODE" -eq 200 ]; then
+            echo "✅ Crawler lancé avec succès!"
+            echo "🔄 Le processus s'exécute maintenant en arrière-plan sur Supabase"
+          else
+            echo "❌ Erreur lors du lancement du crawler"
+            echo "📋 Détails: $BODY"
+            exit 1
+          fi
+
+      - name: 📊 Vérifier le statut (optionnel)
+        run: |
+          echo "ℹ️ Le crawler s'exécute maintenant de manière asynchrone"
+          echo "📈 Vous pouvez suivre les progrès dans votre interface web"
+          echo "🗄️ Les résultats seront visibles dans la table 'annonces'"
+          echo "📝 Les logs détaillés sont dans la table 'crawler_jobs'"
+
+      - name: 🎉 Résumé d'exécution
+        run: |
+          echo "=================================="
+          echo "🤖 CRAWLER AUTOMATIQUE EXÉCUTÉ"
+          echo "=================================="
+          echo "⏰ Prochaine exécution automatique:"
+          echo "   • Matin: 7h00 (heure française)"
+          echo "   • Soir: 19h00 (heure française)"
+          echo "🔄 Fréquence: 2 fois par jour, 7j/7"
+          echo "💻 Fonctionne même PC éteint"
+          echo "=================================="
